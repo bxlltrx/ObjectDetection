@@ -1,65 +1,53 @@
-from ultralytics import YOLO
 import cv2
-import cvzone
-import math
-import numpy as np
-from sort import *
+from ultralytics import YOLO
+from collections import defaultdict
 
-cap = cv2.VideoCapture("https://storage.yandexcloud.net/o-code/tests/computer-vision/video-tracking.mp4")
+# Load the YOLOv8 model
+model = YOLO("yoloWeights/labeling.pt")
+
+cap = cv2.VideoCapture("video-tracking.mp4")
+
+# Define class names
 
 
-model = YOLO('yoloWeights/labeling.pt')
-
-
-classNames = ["person with hardhat", "person without hardhat"]
-
-tracker = Sort(max_age=20, min_hits=3, iou_threshold=0.1)
-
-totalCount = []
-
+# Loop through the video frames
 while cap.isOpened():
-    success, img = cap.read()
-    results = model(img, stream=True)
+    # Read a frame from the video
+    success, frame = cap.read()
 
-    detections = np.empty((0, 5))
-    for r in results:
-        boxes = r.boxes
-        for box in boxes:
-            x1, y1, x2, y2 = box.xyxy[0]
-            x1, y1, x2, y2 = int(x1), int(y1) , int(x2), int(y2)
-            w, h = x2-x1, y2-y1
+    if success:
+        # Run YOLOv8 tracking on the frame, persisting tracks between frames
+        results = model.track(frame, persist=True)
 
+        if results[0].boxes is not None and results[0].boxes.id is not None:
+            # Get bounding box coordinates, track IDs, and class IDs
+            track_ids = results[0].boxes.id.int().cpu().tolist()  # Track IDs
+            class_ids = results[0].boxes.cls.int().cpu().tolist()  # Class IDs
 
-            #Confidence
-            conf = math.ceil((box.conf[0] * 100)) / 100
-            #class name
-            cls = int(box.cls[0])
+            # Count instances of each class
+            count_with_hardhat = class_ids.count(0)
+            count_without_hardhat = class_ids.count(1)
 
-            currentClass = classNames[cls]
-            if currentClass == "person with hardhat":
-                currentArray = np.array([x1, y1, x2, y2, conf])
-                detections = np.vstack((detections, currentArray))
-                cvzone.putTextRect(img, f'  {"person with hardhat"}', (max(0, x1), max(35, y1)))
-            if currentClass == "person without hardhat":
-                currentArray = np.array([x1, y1, x2, y2, conf])
-                detections = np.vstack((detections, currentArray))
-                cvzone.putTextRect(img, f'  {"person without hardhat"}', (max(0, x1), max(35, y1)))
+            # Visualize the results on the frame
+            annotated_frame = results[0].plot()
 
-    resultsTracker = tracker.update(detections)
+            # Display class counts on the frame
+            cv2.putText(annotated_frame, f'with hardhat: {count_with_hardhat}', (10, 120), cv2.FONT_HERSHEY_SIMPLEX, 2,
+                        (255, 0, 0), 2)
 
-    for result in resultsTracker:
-        x1,y1,x2,y2,Id = result
-        x1, y1, x2, y2 = int(x1), int(y1), int(x2), int(y2)
-        w, h = x2 - x1, y2 - y1
+            cv2.putText(annotated_frame, f'without hardhat: {count_without_hardhat}', (10, 170), cv2.FONT_HERSHEY_SIMPLEX, 2,
+                        (200, 213, 48), 2)
 
-        cvzone.cornerRect(img, (x1, y1, w, h), l=9, rt=2, colorR=(255, 0, 255))
-        cvzone.putTextRect(img, f' {int(Id)}', (max(0, x1), max(35, y1)),
-                           scale=2, thickness=3, offset=10)
+            # Display the annotated frame
+            cv2.imshow("YOLOv8 Tracking", annotated_frame)
 
-        if totalCount.count(Id) == 0:
-            totalCount.append(Id)
-        cvzone.putTextRect(img, f' Count: {len(totalCount)}', (50, 50))
-    cv2.imshow("Image", img)
-    cv2.waitKey(1)
+        # Прерывание цикла при нажатии клавиши 'Esc'
+        if cv2.waitKey(1) == 27:
+            break
+    else:
+        # Break the loop if the end of the video is reached
+        break
 
-
+# Release the video capture object and close the display window
+cap.release()
+cv2.destroyAllWindows()

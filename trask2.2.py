@@ -5,14 +5,11 @@ from collections import defaultdict
 
 cap = cv2.VideoCapture("video-tracking.mp4")
 
-
+#дообученная yolov8l
 model = YOLO('yoloWeights/labeling.pt')
 
-
-classNames = ["person with hardhat", "person without hardhat"]
 track_history = defaultdict(lambda: [])
 
-totalCount = []
 
 while cap.isOpened():
     success, img = cap.read()
