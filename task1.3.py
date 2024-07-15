@@ -33,6 +33,4 @@ cv2.putText(image, f"without hardhat: {num_no_helmet}", (10, 30), cv2.FONT_HERSH
 cv2.putText(image, f"with hardhat: {num_helmet}", (10, 70), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
 cv2.imwrite("task1.3_out.jpg", image)
-cv2.imshow("Result", image)
-cv2.waitKey(0)
-cv2.destroyAllWindows()
+
