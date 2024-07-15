@@ -4,7 +4,7 @@ import numpy as np
 from collections import defaultdict
 
 
-model = YOLO("yoloWeights/people count.pt")
+model = YOLO("yoloWeights/count person.pt")
 
 cap = cv2.VideoCapture("https://storage.yandexcloud.net/o-code/tests/computer-vision/video-tracking.mp4")
 
