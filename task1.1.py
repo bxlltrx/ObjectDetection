@@ -2,7 +2,7 @@ from ultralytics import YOLO
 import cv2
 
 
-model = YOLO("yoloWeights/hardhats.pt")  #
+model = YOLO("yoloWeights/count person.pt")  #
 
 results = model.predict("720x.jpg", save=False, imgsz=640)
 
